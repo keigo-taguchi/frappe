@@ -573,6 +573,18 @@ class TestSQLiteSearchAPI(IntegrationTestCase):
 			self.assertEqual(self.count_rows("search_index_queue", doc_id), 0)
 			self.assertEqual(self.count_rows("search_fts", doc_id), 0)
 
+	def test_a_doctype_no_search_indexes_does_not_open_the_index(self):
+		self.search.build_index()
+
+		with (
+			patch("frappe.search.sqlite_search.get_search_classes", return_value=[TestSQLiteSearch]),
+			patch.object(TestSQLiteSearch, "_get_connection") as get_connection,
+		):
+			comment = self.test_notes[0].add_comment("Comment", "not indexed")
+			comment.delete()
+
+		get_connection.assert_not_called()
+
 	def count_rows(self, table, doc_id):
 		conn = sqlite3.connect(self.search.db_path)
 		try:
